@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:json-logger="http://www.mulesoft.org/schema/mule/json-logger" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/json-logger http://www.mulesoft.org/schema/mule/json-logger/current/mule-json-logger.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="06bec91a-f91d-47c9-bad3-0c00e176a11d" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<json-logger:config name="JSON_Logger_Config" doc:name="JSON Logger Config" doc:id="07b6dabc-dfdb-4016-b21d-2dcbbde99b23" applicationName="test-log123" applicationVersion="1.0.0" environment="dev" contentFieldsDataMasking="empId,empSal"/>
+	<ee:object-store-caching-strategy name="Caching_Strategy" doc:name="Caching Strategy" doc:id="39ad096d-8a6d-437d-85d6-dcd1f2e68bd8">
+		<os:private-object-store persistent="false" entryTtl="10" alias="test-log123"/>
+	</ee:object-store-caching-strategy>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="cd044eb0-af6d-48fe-98b1-3ec35a4e8752" >
+		<db:mssql-connection host="localhost" port="1433" user="sa" password="1234" databaseName="MyDB" />
+	</db:config>
+	<flow name="test-log123Flow" doc:id="16bd23db-182e-4788-b663-3c0cc4c0cf2f" >
+		<http:listener doc:name="Listener" doc:id="8cfda8c1-bb90-43d7-af26-a61e0a6f7e12" config-ref="HTTP_Listener_config" path="/testlog"/>
+		<json-logger:logger doc:name="Logger" doc:id="0a96897d-ed55-496d-8f26-1073a707819f" config-ref="JSON_Logger_Config" message="Starting" tracePoint="END"/>
+		<ee:transform doc:name="Transform Message" doc:id="b83ff616-7df3-49d2-9139-56cb623f18e9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"empId" : 123,
+	"empName" : "abc",
+	"empSal" : 12345,
+	"empBldGrp" : "AB"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<json-logger:logger doc:name="Logger" doc:id="549f2ad9-82a7-4163-9df6-71f31907fc9a" config-ref="JSON_Logger_Config" message="Ending"/>
+	</flow>
+	<flow name="test-log123Flow1" doc:id="d0881bc5-515d-4fe3-8032-f35a2eb2fbfd" >
+		<http:listener doc:name="Listener" doc:id="cbf4d430-a3dc-434e-9092-b45529ad902c" config-ref="HTTP_Listener_config" path="/db"/>
+		<logger level="INFO" doc:name="Logger" doc:id="2504b16b-1717-4cd2-8825-1ac375aeffc6" message='"Message Receive"'/>
+		<db:select doc:name="Select" doc:id="133f8c07-4d42-4f09-829d-2654ef000380" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from Movies;]]></db:sql>
+		</db:select>
+		<ee:cache doc:name="Cache" doc:id="c6e944c9-aee6-462b-a03e-c81e5910b98a" cachingStrategy-ref="Caching_Strategy">
+			<logger level="INFO" doc:name="Logger" doc:id="634df80f-eca1-4b4f-840c-bcaa0d68381e" message='"Cache miss"'/>
+			<set-variable value='#["Nandini"]' doc:name="Set Variable" doc:id="2636daad-e0ee-4587-a26a-711b9bd46dc4" variableName="myvar"/>
+			<ee:transform doc:name="Transform Message" doc:id="79e33037-bc96-4b48-b3a0-8f766ad8d9e2">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Hello":"World",
+	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="0087e4d9-b984-4bf8-a4bf-ab8a2af9f6c6" message='"cache end"'/>
+		</ee:cache>
+		<logger level="INFO" doc:name="Logger" doc:id="cec2b942-5002-4c26-91bb-cbe1a2007d4f" message="#[vars.myvar]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="132f794a-58c8-40f0-bc59-540e136d98ed" message='"Response Sent"'/>
+	</flow>
+	<flow name="test-log123Flow2" doc:id="71672ac9-0a5e-4799-bd94-c94d76f1a59f" >
+		<http:listener doc:name="Listener" doc:id="25ea9632-63af-48bd-8805-7e1b50364a37" config-ref="HTTP_Listener_config" path="/mydb"/>
+		<db:select doc:name="Select" doc:id="c0e81418-34ef-4034-a54e-dd17cbac7329" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from movies]]></db:sql>
+		</db:select>
+		<db:update doc:name="Update" doc:id="80579358-1c77-47dd-af1c-a8a81f45ed9f" config-ref="Database_Config">
+			<db:sql ><![CDATA[UPDATE Movies SET Price=1000 WHERE MovieName='RRR']]></db:sql>
+		</db:update>
+		<db:select doc:name="Select" doc:id="691f1ae0-8a4b-45a2-a7f7-cba6885ce7b8" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from movies;]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="9acea729-0244-4c5a-bd93-c7d83d661ee8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	
+</mule>
