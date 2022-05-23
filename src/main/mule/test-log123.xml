@@ -13,16 +13,15 @@ http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="06bec91a-f91d-47c9-bad3-0c00e176a11d" >
 		<http:listener-connection host="0.0.0.0" port="8081" />
 	</http:listener-config>
-	<json-logger:config name="JSON_Logger_Config" doc:name="JSON Logger Config" doc:id="07b6dabc-dfdb-4016-b21d-2dcbbde99b23" applicationName="test-log123" applicationVersion="1.0.0" environment="dev" contentFieldsDataMasking="empId,empSal"/>
 	<ee:object-store-caching-strategy name="Caching_Strategy" doc:name="Caching Strategy" doc:id="39ad096d-8a6d-437d-85d6-dcd1f2e68bd8">
 		<os:private-object-store persistent="false" entryTtl="10" alias="test-log123"/>
 	</ee:object-store-caching-strategy>
 	<db:config name="Database_Config" doc:name="Database Config" doc:id="cd044eb0-af6d-48fe-98b1-3ec35a4e8752" >
 		<db:mssql-connection host="localhost" port="1433" user="sa" password="1234" databaseName="MyDB" />
 	</db:config>
+	
 	<flow name="test-log123Flow" doc:id="16bd23db-182e-4788-b663-3c0cc4c0cf2f" >
 		<http:listener doc:name="Listener" doc:id="8cfda8c1-bb90-43d7-af26-a61e0a6f7e12" config-ref="HTTP_Listener_config" path="/testlog"/>
-		<json-logger:logger doc:name="Logger" doc:id="0a96897d-ed55-496d-8f26-1073a707819f" config-ref="JSON_Logger_Config" message="Starting" tracePoint="END"/>
 		<ee:transform doc:name="Transform Message" doc:id="b83ff616-7df3-49d2-9139-56cb623f18e9" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
@@ -36,7 +35,6 @@ output application/json
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<json-logger:logger doc:name="Logger" doc:id="549f2ad9-82a7-4163-9df6-71f31907fc9a" config-ref="JSON_Logger_Config" message="Ending"/>
 	</flow>
 	<flow name="test-log123Flow1" doc:id="d0881bc5-515d-4fe3-8032-f35a2eb2fbfd" >
 		<http:listener doc:name="Listener" doc:id="cbf4d430-a3dc-434e-9092-b45529ad902c" config-ref="HTTP_Listener_config" path="/db"/>
